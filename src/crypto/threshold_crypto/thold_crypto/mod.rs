@@ -1,10 +1,6 @@
 use std::collections::BTreeMap;
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
-use threshold_crypto::group::CurveAffine;
-use threshold_crypto::{Fr, G1, IntoFr, SecretKeyShare};
-use threshold_crypto::ff::Field;
 use threshold_crypto::poly::{BivarCommitment, BivarPoly, Commitment, Poly};
 use crate::Err;
 
@@ -45,6 +41,7 @@ pub struct PrivateKeyPart {
 pub struct PartialSignature {
     sig: threshold_crypto::SignatureShare,
 }
+
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 #[repr(transparent)]
@@ -121,7 +118,7 @@ impl PrivateKeyPart {
 
 impl PublicKey {
     #[inline]
-    pub fn verify_combined_signatures(&self, sig: &Signature, msg: &[u8]) -> bool {
+    pub fn threshold_verify(&self, sig: &Signature, msg: &[u8]) -> bool {
         self.key.verify(&sig.sig, msg)
     }
 
@@ -176,7 +173,7 @@ impl PublicKeySet {
     }
 
     pub fn verify_combined_signature(&self, msg: &[u8], sig: &Signature) -> Result<()> {
-        if self.public_key().verify_combined_signatures(&sig, msg) {
+        if self.public_key().threshold_verify(&sig, msg) {
             Ok(())
         } else {
             Err(anyhow!("Signature verification failed"))
@@ -184,28 +181,17 @@ impl PublicKeySet {
     }
 }
 
-/// Parameters for the distributed generation
 pub struct DistributedGenerationParams {
     dealers: usize,
     faulty: usize,
 }
 
-/// The generator for the distributed key generation
-/// This represents the information contained in a given node
-///
 pub struct DistributedKeyGenerator {
-    my_index: usize,
-
     params: DistributedGenerationParams,
+    my_index: usize,
 
     poly: BivarPoly,
     commitment: BivarCommitment,
-
-    received_rows: BTreeMap<usize, (Poly, Commitment)>,
-
-    received_votes: BTreeMap<usize, Vec<usize>>,
-
-    final_sec_key: Fr,
 }
 
 impl DistributedGenerationParams {
@@ -233,13 +219,9 @@ impl DistributedKeyGenerator {
             my_index,
             poly: bivar_poly,
             commitment: pub_bivar_commits,
-            received_rows: Default::default(),
-            received_votes: Default::default(),
-            final_sec_key: Fr::zero(),
         })
     }
 
-    /// Each dealer sends row `m` to node `m`, where the index starts at `1`. Don't send row `0`
     pub fn get_keys_to_send(&mut self) -> Result<BTreeMap<usize, (Poly, Commitment)>> {
         let mut resulting_map = BTreeMap::new();
 
@@ -249,69 +231,101 @@ impl DistributedKeyGenerator {
 
         Ok(resulting_map)
     }
-
-    /// Node `m` receives a row from dealer `index`
-    /// This will return a map of the values that node `m` (us) should send to the other nodes for verification
-    pub fn receive_value(&mut self, index: usize, row_poly: Poly) -> Result<(usize, BTreeMap<usize, G1>)> {
-        // FIXME: Why is this here? Is this necessary? I see no reason for its existence
-        // It exists in the distributed key generation example from threshold_crypto but doesn't
-        // Seem to serve any actual purpose
-        // Verification maybe? But are we supposed to send our row poly to all other nodes so they can
-        // Verify it? That seems like a bad idea
-
-        let mut verification_map = BTreeMap::new();
-
-        for s in 1..=self.params.nodes() {
-            let val = row_poly.evaluate(s);
-            let val_g1 = threshold_crypto::G1Affine::one().mul(val);
-
-            verification_map.insert(s, val_g1);
-        }
-
-        self.received_rows.insert(index, (row_poly, row_poly.commitment()));
-        self.received_votes.insert(index, vec![]);
-
-        Ok((index, verification_map))
-    }
-
-    pub fn verify_value(&self, m: usize, val: G1) -> Result<()> {
-        if self.commitment.evaluate(m, self.my_index) != val {
-            return Err!(DistributedKeyGenError::FailedVerifyingReceivedValue(m, self.my_index));
-        }
-
-        Ok(())
-    }
-
-    pub fn received_verification_of_value(&mut self, index: usize, s: usize) -> bool {
-        let received_votes_for_row = self.received_votes.entry(index).or_insert_with(|| vec![]);
-
-        received_votes_for_row.push(s);
-
-        received_votes_for_row.len() >= self.params.faulty() * 2 + 1
-    }
-
-    pub fn finalize_value_verification_for_dealer(&mut self, index: usize) {
-        if let Some((poly, p_commit) )= self.received_rows.remove(&index) {
-            self.final_sec_key.add_assign(&poly.evaluate(Fr::zero()));
-        }
-    }
-
-    pub fn finalize(mut self) -> (PrivateKeyPart, PublicKeyPart) {
-
-        let priv_key = PrivateKeyPart {
-            key: SecretKeyShare::from_mut(&mut self.final_sec_key),
-        };
-
-        let pk = priv_key.public_key_part();
-
-        (priv_key, pk)
-    }
 }
 
-#[derive(Error, Debug)]
-pub enum DistributedKeyGenError {
-    #[error("Received commitment does not match calculated commitment")]
-    ReceivedCommitmentDoesNotMatchCalculatedCommitment,
-    #[error("Failed to verify the given value received from node {0} with my index {1}")]
-    FailedVerifyingReceivedValue(usize, usize),
+/*
+fn distributed_key_generation() {
+    let mut rng = rand::thread_rng();
+    let dealer_num = 3;
+    let node_num = 5;
+    let faulty_num = 2;
+
+    // For distributed key generation, a number of dealers, only one of who needs to be honest,
+    // generates random bivariate polynomials and publicly commits to them. In partice, the
+    // dealers can e.g. be any `faulty_num + 1` nodes.
+    let bi_polys: Vec<BivarPoly> = (0..dealer_num)
+        .map(|_| {
+            BivarPoly::random(faulty_num, &mut rng)
+                .expect("Failed to create random `BivarPoly`")
+        })
+        .collect();
+    let pub_bi_commits: Vec<_> = bi_polys.iter().map(BivarPoly::commitment).collect();
+
+    let mut sec_keys = vec![Fr::zero(); node_num];
+
+    // Each dealer sends row `m` to node `m`, where the index starts at `1`. Don't send row `0`
+    // to anyone! The nodes verify their rows, and send _value_ `s` on to node `s`. They again
+    // verify the values they received, and collect them.
+    for (bi_poly, bi_commit) in bi_polys.iter().zip(&pub_bi_commits) {
+        for m in 1..=node_num {
+            // Node `m` receives its row and verifies it.
+            let row_poly = bi_poly
+                .row(m)
+                .unwrap_or_else(|_| panic!("Failed to create row #{}", m));
+            let row_commit = bi_commit.row(m);
+            assert_eq!(row_poly.commitment(), row_commit);
+            // Node `s` receives the `s`-th value and verifies it.
+            for s in 1..=node_num {
+                let val = row_poly.evaluate(s);
+                let val_g1 = G1Affine::one().mul(val);
+                assert_eq!(bi_commit.evaluate(m, s), val_g1);
+                // The node can't verify this directly, but it should have the correct value:
+                assert_eq!(bi_poly.evaluate(m, s), val);
+            }
+
+            // A cheating dealer who modified the polynomial would be detected.
+            let x_pow_2 =
+                Poly::monomial(2).expect("Failed to create monic polynomial of degree 2");
+            let five = Poly::constant(5.into_fr())
+                .expect("Failed to create polynomial with constant 5");
+            let wrong_poly = row_poly.clone() + x_pow_2 * five;
+            assert_ne!(wrong_poly.commitment(), row_commit);
+
+            // If `2 * faulty_num + 1` nodes confirm that they received a valid row, then at
+            // least `faulty_num + 1` honest ones did, and sent the correct values on to node
+            // `s`. So every node received at least `faulty_num + 1` correct entries of their
+            // column/row (remember that the bivariate polynomial is symmetric). They can
+            // reconstruct the full row and in particular value `0` (which no other node knows,
+            // only the dealer). E.g. let's say nodes `1`, `2` and `4` are honest. Then node
+            // `m` received three correct entries from that row:
+            let received: BTreeMap<_, _> = [1, 2, 4]
+                .iter()
+                .map(|&i| (i, bi_poly.evaluate(m, i)))
+                .collect();
+            let my_row =
+                Poly::interpolate(received).expect("Failed to create `Poly` via interpolation");
+            assert_eq!(bi_poly.evaluate(m, 0), my_row.evaluate(0));
+            assert_eq!(row_poly, my_row);
+
+            // The node sums up all values number `0` it received from the different dealer. No
+            // dealer and no other node knows the sum in the end.
+            sec_keys[m - 1].add_assign(&my_row.evaluate(Fr::zero()));
+        }
+    }
+
+    // Each node now adds up all the first values of the rows it received from the different
+    // dealers (excluding the dealers where fewer than `2 * faulty_num + 1` nodes confirmed).
+    // The whole first column never gets added up in practice, because nobody has all the
+    // information. We do it anyway here; entry `0` is the secret key that is not known to
+    // anyone, neither a dealer, nor a node:
+    let mut sec_key_set = Poly::zero().expect("Failed to create empty `Poly`");
+    for bi_poly in &bi_polys {
+        sec_key_set += bi_poly
+            .row(0)
+            .expect("Failed to create `Poly` from row #0 for `BivarPoly`");
+    }
+    for m in 1..=node_num {
+        assert_eq!(sec_key_set.evaluate(m), sec_keys[m - 1]);
+    }
+
+    // The sum of the first rows of the public commitments is the commitment to the secret key
+    // set.
+    let mut sum_commit = Poly::zero()
+        .expect("Failed to create empty `Poly`")
+        .commitment();
+    for bi_commit in &pub_bi_commits {
+        sum_commit += bi_commit.row(0);
+    }
+    assert_eq!(sum_commit, sec_key_set.commitment());
 }
+ */

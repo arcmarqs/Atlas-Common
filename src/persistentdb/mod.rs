@@ -6,12 +6,15 @@ use ::sled::IVec;
 
 use crate::error::*;
 
-#[cfg(feature = "persistent_db_rocksdb")]
-pub mod rocksdb;
+
 
 pub mod disabled;
 
+#[cfg(feature = "persistent_db_sled")]
 pub mod sled;
+
+#[cfg(feature = "persistent_db_rocksdb")]
+pub mod rocksdb;
 
 /// The basic implementation for the Key-Value DB used by this middleware
 /// This was abstracted so we could use multiple types of databases without having
@@ -23,8 +26,8 @@ pub struct KVDB {
     #[cfg(feature = "persistent_db_sled")]
     inner: sled::SledKVDB,
 
-    //#[cfg(feature = "persistent_db_rocksdb")]
-    //inner: Arc<rocksdb::RocksKVDB>,
+    #[cfg(feature = "persistent_db_rocksdb")]
+    inner: Arc<rocksdb::RocksKVDB>,
     //TODO: This should be an else, not just not rocksdb
    
     //inner: disabled::DisabledKV
@@ -42,8 +45,8 @@ impl KVDB {
             #[cfg(feature = "persistent_db_sled")]
             {sled::SledKVDB::new(db_path, prefixes_cpy)?}
 
-           // #[cfg(feature = "persistent_db_rocksdb")]
-           // {Arc::new(rocksdb::RocksKVDB::new(db_path, prefixes_cpy)?)}
+            #[cfg(feature = "persistent_db_rocksdb")]
+            {Arc::new(rocksdb::RocksKVDB::new(db_path, prefixes_cpy)?)}
             //{disabled::DisabledKV::new(db_path, prefixes_cpy)?}
         };
 

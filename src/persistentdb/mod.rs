@@ -19,11 +19,14 @@ pub mod sled;
 #[derive(Clone)]
 pub struct KVDB {
     _prefixes: Vec<&'static str>,
+
+    #[cfg(feature = "persistent_db_sled")]
+    inner: sled::SledKVDB,
+    
     #[cfg(feature = "persistent_db_rocksdb")]
     inner: Arc<rocksdb::RocksKVDB>,
     //TODO: This should be an else, not just not rocksdb
-    #[cfg(feature = "persistent_db_sled")]
-    inner: sled::SledKVDB,
+   
     //inner: disabled::DisabledKV
 }
 

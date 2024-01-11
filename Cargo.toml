@@ -25,6 +25,7 @@ default = [
     "crypto_signature_ring_ed25519",
     "crypto_hash_blake3_blake3",
     "collections_randomstate_fxhash",
+    "persistent_db_sled",
 ]
 
 #Async socket alternatives, choose one
@@ -78,6 +79,7 @@ collections_randomstate_twox_hash = ["twox-hash"]
 # If no type of this category is presented, it will default to disabled,
 # But the default features do include rocksdb
 persistent_db_rocksdb = ["rocksdb"]
+persistent_db_sled = ["sled"]
 persistent_db_disabled = []
 
 serialize_serde = ["serde", "serde-big-array"]
@@ -126,7 +128,7 @@ crossbeam-channel = { version = "0.5.2", optional = true }
 crossbeam-skiplist = "0.1.1"
 rocksdb = { version = "0.20.1", optional = true }
 oneshot = "0.1.5"
-sled = { version = "0.34.7"}
+sled = { version = "0.34.7", optional=true}
 
 log = "0.4.17"
 #tracing = "0.1.32"

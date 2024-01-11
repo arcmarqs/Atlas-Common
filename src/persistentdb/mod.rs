@@ -21,7 +21,7 @@ pub struct KVDB {
     #[cfg(feature = "persistent_db_rocksdb")]
     inner: Arc<rocksdb::RocksKVDB>,
     //TODO: This should be an else, not just not rocksdb
-    #[cfg(not(feature = "persistent_db_rocksdb"))]
+    #[cfg(feature = "persistent_db_sled")]
     inner: sled::SledKVDB,
     //inner: disabled::DisabledKV
 }
@@ -37,7 +37,7 @@ impl KVDB {
         let inner = {
             #[cfg(feature = "persistent_db_rocksdb")]
             {Arc::new(rocksdb::RocksKVDB::new(db_path, prefixes_cpy)?)}
-            #[cfg(not(feature = "persistent_db_rocksdb"))]
+            #[cfg(feature = "persistent_db_sled")]
             {sled::SledKVDB::new(db_path, prefixes_cpy)?}
             //{disabled::DisabledKV::new(db_path, prefixes_cpy)?}
         };
@@ -73,7 +73,7 @@ impl KVDB {
         self.inner.exists(prefix, key)
     }
 
-    #[cfg(not(feature = "persistent_db_rocksdb"))]
+    #[cfg(feature = "persistent_db_sled")]
     pub fn set<T, Y>(&self, prefix: &'static str, key: T, data: Y) -> Result<()>
     where
         T: AsRef<[u8]>,
@@ -91,7 +91,7 @@ impl KVDB {
     {
         self.inner.set(prefix, key, data)
     }
-    #[cfg(not(feature = "persistent_db_rocksdb"))]
+    #[cfg(feature = "persistent_db_sled")]
     pub fn set_all<T, Y, Z>(&self, prefix: &'static str, values: T) -> Result<()>
     where
         T: Iterator<Item = (Y, Z)>,
@@ -126,7 +126,7 @@ impl KVDB {
     /// Accepts an [`&[&[u8]]`], in any possible form, as long as it can be dereferenced
     /// all the way to the intended target.
     /// 
-    #[cfg(not(feature = "persistent_db_rocksdb"))]
+    #[cfg(feature = "persistent_db_sled")]
     pub fn erase_keys<T, Y>(&self, prefix: &'static str, keys: T) -> Result<()>
     where
         T: Iterator<Item = Y>,
@@ -178,7 +178,7 @@ impl KVDB {
         self.iter_range::<Vec<u8>, Vec<u8>>(prefix, None, None)
     }
 
-    #[cfg(not(feature = "persistent_db_rocksdb"))]
+    #[cfg(feature = "persistent_db_sled")]
     pub fn iter(
         &self,
         prefix: &'static str,
@@ -186,7 +186,7 @@ impl KVDB {
         self.iter_range::<Vec<u8>>(prefix, None, None)
     }
 
-    #[cfg(not(feature = "persistent_db_rocksdb"))]
+    #[cfg(feature = "persistent_db_sled")]
     pub fn iter_range<T>(
         &self,
         prefix: &'static str,

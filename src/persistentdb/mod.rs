@@ -13,7 +13,7 @@ pub mod disabled;
 #[cfg(feature = "persistent_db_sled")]
 pub mod sled;
 
-#[cfg(feature = "persistent_db_rocksdb")]
+#[cfg(not(feature = "persistent_db_sled"))]
 pub mod rocksdb;
 
 /// The basic implementation for the Key-Value DB used by this middleware
@@ -26,7 +26,7 @@ pub struct KVDB {
     #[cfg(feature = "persistent_db_sled")]
     inner: sled::SledKVDB,
 
-    #[cfg(feature = "persistent_db_rocksdb")]
+    #[cfg(not(feature = "persistent_db_sled"))]
     inner: Arc<rocksdb::RocksKVDB>,
     //TODO: This should be an else, not just not rocksdb
    
@@ -39,13 +39,12 @@ impl KVDB {
         T: AsRef<Path>,
     {
         let prefixes_cpy = prefixes.clone();
-
-
+     
         let inner = {
             #[cfg(feature = "persistent_db_sled")]
             {sled::SledKVDB::new(db_path, prefixes_cpy)?}
 
-            #[cfg(feature = "persistent_db_rocksdb")]
+            #[cfg(not(feature = "persistent_db_sled"))]
             {Arc::new(rocksdb::RocksKVDB::new(db_path, prefixes_cpy)?)}
             //{disabled::DisabledKV::new(db_path, prefixes_cpy)?}
         };
@@ -91,7 +90,7 @@ impl KVDB {
         self.inner.set(prefix, key, data)
     }
 
-    #[cfg(feature = "persistent_db_rocksdb")]
+    #[cfg(not(feature = "persistent_db_sled"))]
     pub fn set<T, Y>(&self, prefix: &'static str, key: T, data: Y) -> Result<()>
     where
         T: AsRef<[u8]>,
@@ -113,7 +112,7 @@ impl KVDB {
     }
 
     
-    #[cfg(feature = "persistent_db_rocksdb")]
+    #[cfg(not(feature = "persistent_db_sled"))]
     pub fn set_all<T, Y, Z>(&self, prefix: &'static str, values: T) -> Result<()>
     where
         T: Iterator<Item = (Y, Z)>,
@@ -144,7 +143,7 @@ impl KVDB {
         self.inner.erase_keys(prefix, keys)
     }
 
-    #[cfg(feature = "persistent_db_rocksdb")]
+    #[cfg(not(feature = "persistent_db_sled"))]
     pub fn erase_keys<T, Y>(&self, prefix: &'static str, keys: T) -> Result<()>
     where
         T: Iterator<Item = Y>,
@@ -178,7 +177,7 @@ impl KVDB {
     }
 
 
-    #[cfg(feature = "persistent_db_rocksdb")]
+    #[cfg(not(feature = "persistent_db_sled"))]
     pub fn iter(
         &self,
         prefix: &'static str,
@@ -207,7 +206,7 @@ impl KVDB {
         self.inner.iter_range(prefix, start, end)
     }
 
-    #[cfg(feature = "persistent_db_rocksdb")]
+    #[cfg(not(feature = "persistent_db_sled"))]
     pub fn iter_range<T,Y>(
         &self,
         prefix: &'static str,

@@ -78,8 +78,8 @@ collections_randomstate_twox_hash = ["twox-hash"]
 # Alternatives for the persistent db type.
 # If no type of this category is presented, it will default to disabled,
 # But the default features do include rocksdb
-persistent_db_rocksdb = ["rocksdb"]
 persistent_db_sled = ["sled"]
+persistent_db_rocksdb = ["rocksdb"]
 persistent_db_disabled = []
 
 serialize_serde = ["serde", "serde-big-array"]

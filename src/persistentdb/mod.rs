@@ -42,8 +42,8 @@ impl KVDB {
             #[cfg(feature = "persistent_db_sled")]
             {sled::SledKVDB::new(db_path, prefixes_cpy)?}
 
-            #[cfg(feature = "persistent_db_rocksdb")]
-            {Arc::new(rocksdb::RocksKVDB::new(db_path, prefixes_cpy)?)}
+           // #[cfg(feature = "persistent_db_rocksdb")]
+           // {Arc::new(rocksdb::RocksKVDB::new(db_path, prefixes_cpy)?)}
             //{disabled::DisabledKV::new(db_path, prefixes_cpy)?}
         };
 

@@ -10,6 +10,7 @@ use crate::error::*;
 pub mod rocksdb;
 
 pub mod disabled;
+
 pub mod sled;
 
 /// The basic implementation for the Key-Value DB used by this middleware

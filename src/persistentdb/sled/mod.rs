@@ -96,7 +96,8 @@ impl SledKVDB {
     {
         let handle = self.get_handle(prefix)?;
 
-        if let Ok(_) = handle.insert(key, data) {
+        if let Ok(res) = handle.insert(key, data) {
+            println!("set res : {:?}", res);
             Ok(())
         } else {
             Err!(PersStorage::NoPrefix(prefix))

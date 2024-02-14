@@ -1,4 +1,5 @@
 use std::fmt::format;
+use std::iter::once;
 use std::path::Path;
 use anyhow::{anyhow, Context};
 
@@ -75,21 +76,21 @@ impl RocksKVDB {
             T: Iterator<Item=(&'static str, Y)>,
             Y: AsRef<[u8]>,
     {
-        let final_keys: Result<Vec<_>> =
-            keys.map(|(prefix, key)| {
-                if let Ok(handle) = self.get_handle(prefix) {
-                    Ok((handle, key))
-                } else {
-                    Err(anyhow!(""))
-                }
-            }).collect();
+        let (prefix, keys): (Vec<_>,Vec<_>) = keys.into_iter().unzip();
 
+        let handle = self.get_handle(prefix[0]).unwrap();
         Ok(self.db
-            .multi_get_cf(final_keys?)
+            .batched_multi_get_cf(handle,keys,false)
             .into_iter()
             .map(|r| {
                 if let Ok(result) = r {
-                    Ok(result)
+                    match result {
+                        Some(res) => 
+                        {
+                            Ok(Some(res.to_vec()))
+                        },
+                        None => Ok(None),
+                    }
                 } else {
                     Err(anyhow!(""))
                 }

@@ -2,6 +2,7 @@ use std::path::Path;
 use std::sync::Arc;
 use thiserror::Error;
 
+#[cfg(feature = "persistent_db_sled")]
 use ::sled::IVec;
 
 use crate::error::*;

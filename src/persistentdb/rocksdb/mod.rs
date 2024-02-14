@@ -29,6 +29,11 @@ impl RocksKVDB {
         }
 
         let mut db_opts = Options::default();
+        db_opts.increase_parallelism(16);
+        db_opts.set_allow_mmap_writes(true);
+        db_opts.set_write_buffer_size(0x8000000);
+        db_opts.set_blob_compression_type(rocksdb::DBCompressionType::Zstd);
+        db_opts.set_enable_blob_files(true);
         db_opts.create_missing_column_families(true);
         db_opts.create_if_missing(true);
 

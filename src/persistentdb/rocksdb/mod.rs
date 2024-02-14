@@ -23,16 +23,23 @@ impl RocksKVDB {
         let mut cfs = Vec::with_capacity(prefixes.len());
 
         for cf in prefixes {
-            let cf_opts = Options::default();
+            let mut cf_opts = Options::default();
+
+            if cf.eq("state") {
+                cf_opts.set_enable_blob_files(true);
+                cf_opts.set_compaction_style(rocksdb::DBCompactionStyle::Level);
+                cf_opts.set_blob_file_size(0x10000000);
+                cf_opts.set_write_buffer_size(0x10000000);
+                cf_opts.set_target_file_size_base(0x2000000);
+                cf_opts.set_max_bytes_for_level_base(8*0x2000000);
+            }
 
             cfs.push(ColumnFamilyDescriptor::new(cf, cf_opts));
         }
 
         let mut db_opts = Options::default();
         db_opts.increase_parallelism(48);
-        db_opts.set_allow_mmap_writes(true);
-        db_opts.set_blob_compression_type(rocksdb::DBCompressionType::Zstd);
-        db_opts.set_enable_blob_files(true);
+       
         db_opts.create_missing_column_families(true);
         db_opts.create_if_missing(true);
 

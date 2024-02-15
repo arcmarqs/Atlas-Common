@@ -17,7 +17,9 @@ impl SledKVDB {
         T: AsRef<Path>,
     {
         let conf = Config::default()
-        .mode(sled::Mode::LowSpace)
+        .use_compression(true)
+        .compression_factor(10)
+        .mode(sled::Mode::HighThroughput)
         .path(db_location)
         .cache_capacity(3*1024*1024*1024);
 
@@ -115,17 +117,17 @@ impl SledKVDB {
     {
         let handle = self.get_handle(prefix)?;
 
-       let mut batch = Batch::default();
+       //let mut batch = Batch::default();
 
         for (key, value) in values {
-            batch.insert(key, value);
+            let _ = handle.insert(key, value);
         }
 
-        let ret = handle.apply_batch(batch).context(format!("Failed to set keys"));
+       // let ret = handle.apply_batch(batch).context(format!("Failed to set keys"));
         
         //handle.flush();
 
-        ret
+        Ok(())
     }
 
     pub fn erase<T>(&self, prefix: &'static str, key: T) -> Result<()>

@@ -35,7 +35,7 @@ impl RocksKVDB {
                 cf_opts.set_target_file_size_base(0x100000);
                 cf_opts.optimize_for_point_lookup(0x4000000);
                 cf_opts.set_max_bytes_for_level_base(0x1000000);
-                cf_opts.set_blob_compression_type(rocksdb::DBCompressionType::Zstd);
+                cf_opts.set_blob_compression_type(rocksdb::DBCompressionType::None);
             }
 
             cfs.push(ColumnFamilyDescriptor::new(cf, cf_opts));

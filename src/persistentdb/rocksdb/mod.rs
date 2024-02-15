@@ -80,7 +80,7 @@ impl RocksKVDB {
 
         let handle = self.get_handle(prefix[0]).unwrap();
         Ok(self.db
-            .batched_multi_get_cf(handle,keys,false)
+            .batched_multi_get_cf(handle,keys,true)
             .into_iter()
             .map(|r| {
                 if let Ok(result) = r {

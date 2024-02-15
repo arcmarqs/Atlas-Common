@@ -17,7 +17,6 @@ impl SledKVDB {
         T: AsRef<Path>,
     {
         let conf = Config::default()
-        .use_compression(true)
         .compression_factor(10)
         .mode(sled::Mode::HighThroughput)
         .path(db_location)

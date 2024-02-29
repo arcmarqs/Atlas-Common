@@ -191,7 +191,6 @@ impl<T> ChannelSyncTx<T> {
 
     #[inline]
     pub fn send(&self, value: T) -> Result<()> {
-        info!("sending message {:?}", self.channel_identifier);
         self.send_return(value).map_err(SendError::from).map_err(anyhow::Error::from)
     }
 

@@ -132,7 +132,7 @@ impl RocksKVDB {
         }
 
         self.db.write(batch)
-            .context(format!("Failed to set keys"))
+            .context(format!("Failed to set keys"));
 
         self.db.flush();
 

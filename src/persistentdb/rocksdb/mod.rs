@@ -125,7 +125,7 @@ impl RocksKVDB {
             Z: AsRef<[u8]>,
     {
         let handle = self.get_handle(prefix)?;
-        let mut batch = WriteBatchWithTransaction::<true>::default();
+        let mut batch = WriteBatchWithTransaction::<false>::default();
 
         for (key, value) in values {
             batch.put_cf(handle, key, value)

@@ -133,6 +133,10 @@ impl RocksKVDB {
 
         self.db.write(batch)
             .context(format!("Failed to set keys"))
+
+        self.db.flush();
+
+        Ok(())
     }
 
     pub fn erase<T>(&self, prefix: &'static str, key: T) -> Result<()>

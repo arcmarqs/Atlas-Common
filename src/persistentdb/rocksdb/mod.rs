@@ -72,30 +72,30 @@ impl RocksKVDB {
     }
 
     pub fn get_all<T, Y>(&self, keys: T) -> Result<Vec<Result<Option<Vec<u8>>>>>
-        where
-            T: Iterator<Item=(&'static str, Y)>,
-            Y: AsRef<[u8]>,
-    {
-        let (prefix, keys): (Vec<_>,Vec<_>) = keys.into_iter().unzip();
+    where
+        T: Iterator<Item=(&'static str, Y)>,
+        Y: AsRef<[u8]>,
+{
+    let final_keys: Result<Vec<_>> =
+        keys.map(|(prefix, key)| {
+            if let Ok(handle) = self.get_handle(prefix) {
+                Ok((handle, key))
+            } else {
+                Err(anyhow!(""))
+            }
+        }).collect();
 
-        let handle = self.get_handle(prefix[0]).unwrap();
-        Ok(self.db
-            .batched_multi_get_cf(handle,keys,true)
-            .into_iter()
-            .map(|r| {
-                if let Ok(result) = r {
-                    match result {
-                        Some(res) => 
-                        {
-                            Ok(Some(res.to_vec()))
-                        },
-                        None => Ok(None),
-                    }
-                } else {
-                    Err(anyhow!(""))
-                }
-            }).collect())
-    }
+    Ok(self.db
+        .multi_get_cf(final_keys?)
+        .into_iter()
+        .map(|r| {
+            if let Ok(result) = r {
+                Ok(result)
+            } else {
+                Err(anyhow!(""))
+            }
+        }).collect())
+}
 
     pub fn exists<T>(&self, prefix: &'static str, key: T) -> Result<bool>
         where

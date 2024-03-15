@@ -28,13 +28,14 @@ impl RocksKVDB {
 
             if cf.eq("state") {
                 print!("state");
-                cf_opts.increase_parallelism(48);
                 cf_opts.set_enable_blob_files(true);
-                //cf_opts.set_blob_file_size(0x400000);
-                cf_opts.set_write_buffer_size(0x400000);
+                cf_opts.set_blob_file_size(0x4000000);
+                cf_opts.set_write_buffer_size(0x4000000);
                 cf_opts.set_min_blob_size(0x200000);
                 cf_opts.set_target_file_size_base(0x100000);
-                cf_opts.set_max_bytes_for_level_base(0x4000000);
+                cf_opts.optimize_for_point_lookup(0x4000000);
+                cf_opts.set_max_bytes_for_level_base(0x1000000);
+                cf_opts.set_blob_compression_type(rocksdb::DBCompressionType::Zstd);
                 //cf_opts.prepare_for_bulk_load();
             }
 
@@ -42,6 +43,7 @@ impl RocksKVDB {
         }
 
         let mut db_opts = Options::default();
+        db_opts.increase_parallelism(48);
         db_opts.create_missing_column_families(true);
         db_opts.create_if_missing(true);
 

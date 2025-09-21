@@ -27,12 +27,12 @@ impl RocksKVDB {
             let mut cf_opts = Options::default();
 
              if cf.eq("state") {
-                //cf_opts.increase_parallelism(12);
+                cf_opts.increase_parallelism(4);
                 print!("state");
-                cf_opts.set_enable_blob_files(true);
-                cf_opts.set_blob_file_size(0x4000000);
-                cf_opts.set_write_buffer_size(0x4000000);
-                cf_opts.set_min_blob_size(0x200000);
+                //cf_opts.set_enable_blob_files(true);
+                // cf_opts.set_blob_file_size(0x4000000);
+                //cf_opts.set_write_buffer_size(0x4000000);
+                // cf_opts.set_min_blob_size(0x200000);
             }
 
             cfs.push(ColumnFamilyDescriptor::new(cf, cf_opts));

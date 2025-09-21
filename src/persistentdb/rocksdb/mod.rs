@@ -27,7 +27,7 @@ impl RocksKVDB {
             let mut cf_opts = Options::default();
 
              if cf.eq("state") {
-                cf_opts.increase_parallelism(4);
+                cf_opts.increase_parallelism(24);
                 print!("state");
                 //cf_opts.set_enable_blob_files(true);
                 // cf_opts.set_blob_file_size(0x4000000);

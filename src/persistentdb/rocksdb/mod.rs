@@ -29,6 +29,8 @@ impl RocksKVDB {
              if cf.eq("state") {
                 cf_opts.increase_parallelism(6);
                 cf_opts.set_enable_blob_files(true);
+                cf_opts.set_allow_mmap_writes(true);
+                cf_opts.set_allow_mmap_reads(true);
             }
 
             cfs.push(ColumnFamilyDescriptor::new(cf, cf_opts));
@@ -37,6 +39,7 @@ impl RocksKVDB {
         let mut db_opts = Options::default();
         db_opts.create_missing_column_families(true);
         db_opts.create_if_missing(true);
+        println!("DB STATS: {:?}", db_opts.get_statistics());
 
         let db = DB::open_cf_descriptors(&db_opts, db_location, cfs).unwrap();
 
@@ -124,6 +127,7 @@ impl RocksKVDB {
             batch.put_cf(handle, key, value)
         }
 
+        println!("block cache {:?}", self.db.property_value("rocksdb.block-cache-usage"));
         self.db.write(batch)
             .context(format!("Failed to set keys"))
     }

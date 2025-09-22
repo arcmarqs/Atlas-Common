@@ -3,6 +3,7 @@ use std::iter::once;
 use std::path::Path;
 use anyhow::{anyhow, Context};
 
+use rocksdb::{BlockBasedOptions, Cache};
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, CompactOptions, DBWithThreadMode, Direction,
     IteratorMode, Options, SingleThreaded, WriteBatchWithTransaction, DB,
@@ -27,23 +28,27 @@ impl RocksKVDB {
             let mut cf_opts = Options::default();
 
              if cf.eq("state") {
-                cf_opts.increase_parallelism(6);
                 cf_opts.set_enable_blob_files(true);
-                cf_opts.set_allow_mmap_writes(true);
-                cf_opts.set_allow_mmap_reads(true);
+                cf_opts.set_min_blob_size(512);
                 cf_opts.set_use_direct_reads(true);
-                cf_opts.set_db_write_buffer_size(256*1024*1024);
             }
 
             cfs.push(ColumnFamilyDescriptor::new(cf, cf_opts));
         }
 
+        let cache= Cache::new_lru_cache(256 * 1024 * 1024).unwrap();
+        let mut block_opts = BlockBasedOptions::default();
+        block_opts.set_block_cache(&cache);
+        block_opts.set_cache_index_and_filter_blocks(true);
+        //block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
         let mut db_opts = Options::default();
         db_opts.create_missing_column_families(true);
+        db_opts.increase_parallelism(8);
+        db_opts.set_write_buffer_size(64*1024*1024);
+        db_opts.set_db_write_buffer_size(256 * 1024 * 1024);
         db_opts.enable_statistics();
 
         db_opts.create_if_missing(true);
-        db_opts.set_use_fsync(true);
 
         let db = DB::open_cf_descriptors(&db_opts, db_location, cfs).unwrap();
 

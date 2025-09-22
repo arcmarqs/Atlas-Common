@@ -36,11 +36,11 @@ impl RocksKVDB {
             cfs.push(ColumnFamilyDescriptor::new(cf, cf_opts));
         }
 
-        let cache= Cache::new_lru_cache(256 * 1024 * 1024).unwrap();
+        let cache= Cache::new_lru_cache(128 * 1024 * 1024).unwrap();
         let mut block_opts = BlockBasedOptions::default();
         block_opts.set_block_cache(&cache);
         block_opts.set_cache_index_and_filter_blocks(true);
-        //block_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
+        block_opts.set_pin_l0_filter_and_index_blocks_in_cache(false);
         let mut db_opts = Options::default();
         db_opts.create_missing_column_families(true);
         db_opts.increase_parallelism(8);

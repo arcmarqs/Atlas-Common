@@ -44,7 +44,6 @@ impl RocksKVDB {
 
         db_opts.create_if_missing(true);
         db_opts.set_use_fsync(true);
-        println!("DB STATS: {:?}", db_opts.get_statistics());
 
         let db = DB::open_cf_descriptors(&db_opts, db_location, cfs).unwrap();
 

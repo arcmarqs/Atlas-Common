@@ -232,4 +232,10 @@ impl RocksKVDB {
 
         Ok(Box::new(bytes.into_iter()))
     }
+
+    pub fn get_stats(&self) {
+        println!("{:?}", self.db.property_value("rocksdb.cur-size-all-mem-tables"));
+        println!("{:?}", self.db.property_value("rocksdb.estimate-table-readers-mem"));
+        println!("{:?}", self.db.property_value("rocksdb.estimate-live-data-size"));
+    }
 }

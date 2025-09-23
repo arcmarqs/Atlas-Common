@@ -220,6 +220,11 @@ impl KVDB {
     {
         self.inner.iter_range(prefix, start, end)
     }
+
+    #[cfg(not(feature = "persistent_db_sled"))]
+    pub fn get_properties(&self) {
+        self.inner.get_stats();
+    }
 }
 
 #[derive(Error, Debug)]

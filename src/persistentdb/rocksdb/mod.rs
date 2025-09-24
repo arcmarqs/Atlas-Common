@@ -36,7 +36,7 @@ impl RocksKVDB {
             cfs.push(ColumnFamilyDescriptor::new(cf, cf_opts));
         }
 
-        let cache= Cache::new_lru_cache(128 * 1024 * 1024).unwrap();
+        let cache= Cache::new_lru_cache(128 * 1024 * 1024);
         let mut block_opts = BlockBasedOptions::default();
         block_opts.set_block_cache(&cache);
         block_opts.set_cache_index_and_filter_blocks(true);

@@ -190,6 +190,11 @@ impl<T> ChannelSyncTx<T> {
     }
 
     #[inline]
+    pub fn is_full(&self) -> bool {
+        self.inner.is_full()
+    }
+
+    #[inline]
     pub fn send(&self, value: T) -> Result<()> {
         self.send_return(value).map_err(SendError::from).map_err(anyhow::Error::from)
     }

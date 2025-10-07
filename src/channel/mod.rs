@@ -201,30 +201,26 @@ impl<T> ChannelSyncTx<T> {
 
     #[inline]
     pub fn send_return(&self, value: T) -> std::result::Result<(), SendReturnError<T>> {
-        let value = match self.inner.try_send(value) {
+        match self.inner.try_send(value) {
             Ok(_) => {
-                return Ok(());
+                Ok(())
             }
             Err(err) => {
                 match err {
                     TrySendReturnError::Full(value) => {
-                        error!("Failed to insert into channel. Channel is full and could not directly insert, blocking. {:?} {:?} {:?}", self.channel_identifier, self.len(), self.inner.capacity());
-
-                        value
+                        error!("Failed to insert into channel. Channel is full - returning error instead of blocking. {:?} {:?} {:?}", self.channel_identifier, self.len(), self.inner.capacity());
+                        Err(SendReturnError::FailedToSend(value))
                     }
                     TrySendReturnError::Disconnected(value) => {
                         error!("Channel is disconnected");
-
-                        value
+                        Err(SendReturnError::FailedToSend(value))
                     }
                     TrySendReturnError::Timeout(value) => {
-                        value
+                        Err(SendReturnError::FailedToSend(value))
                     }
                 }
             }
-        };
-
-        self.inner.send(value)
+        }
     }
 
     #[inline]
